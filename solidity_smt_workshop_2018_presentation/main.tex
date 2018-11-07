@@ -1,0 +1,487 @@
+% Copyright 2004 by Till Tantau <tantau@users.sourceforge.net>.
+%
+% In principle, this file can be redistributed and/or modified under
+% the terms of the GNU Public License, version 2.
+%
+% However, this file is supposed to be a template to be modified
+% for your own needs. For this reason, if you use this file as a
+% template and not specifically distribute it as part of a another
+% package/program, I grant the extra permission to freely copy and
+% modify this file as you see fit and even to delete this copyright
+% notice. 
+
+\documentclass{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+
+\newcommand{\code}[1]{\texttt{#1}}
+
+\lstset{ %
+language=C++,           % choose the language of the code
+numbers=left,           % where to put the line-numbers
+numberstyle=\tiny,      % the size of the fonts that are used for the line-numbers
+basicstyle=\footnotesize    % the size of the fonts that are used for the line-numbers
+}
+
+% There are many different themes available for Beamer. A comprehensive
+% list with examples is given here:
+% http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
+% You can uncomment the themes below if you would like to use a different
+% one:
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{boxes}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{default}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+%\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+\title{SMT-based Compile-time Verification of Safety Properties for Smart Contracts}
+%\subtitle{Optional Subtitle}
+
+\author{Leonardo Alt \and Christian Reitwiessner}
+
+\institute{Ethereum Foundation}
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+% Let's get started
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Ethereum}
+
+\begin{frame}{Ethereum}
+\begin{itemize}
+	\item Global networked application platform \bigskip
+	\item Distributed public database \bigskip
+	\item Blockchain consensus \bigskip
+	\pause
+	\item Trustless \bigskip
+	\item Transparent \bigskip
+	\item No single entity has control \bigskip
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Smart Contracts}
+\begin{itemize}
+	\item Accounts controlled by code \bigskip
+	\item SCs have a storage which can only be written by the SC itself \bigskip
+	\item The code runs on the Ethereum Virtual Machine (EVM) \bigskip
+	\item Opcodes have costs (\emph{gas}) \bigskip
+	\item Transactions may \emph{revert} (exception termination state) \bigskip
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Smart Contracts}
+\begin{itemize}
+	\item The code is public and immutable after creation \bigskip
+	\item Monetary incentive to study/attack the program \bigskip
+	\item The DAO and Parity hacks/accidents \bigskip
+\end{itemize}
+\pause
+Easy, just use formal verification :)
+\end{frame}
+
+\begin{frame}{Smart Contracts - Verification Frameworks}
+\begin{itemize}
+	\item EVM Formal Semantics: Eth-Isabelle~\cite{Eth-Isabelle}, KEVM~\cite{KEVM}, Ethereum-Lem~\cite{Ethereum-Lem} \bigskip
+	\item EVM bytecode Symbolic Execution: Oyente~\cite{Luu2016}, Mythril~\cite{Mythril}, MAIAN~\cite{NKSSH18} \bigskip
+	\item Translation of Solidity to verifiable languages: Why3~\cite{Why3}, F*~\cite{Bhargavan2016}, ZEUS~\cite{ZEUS} \bigskip
+	\item Our approach: Solidity SMT-based BMC
+	\begin{itemize}
+		\item Part of the compilation stack
+		\item No extra effort spent by the developer
+		\item Counterexamples
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+%\begin{frame}{Ethereum}
+%Use cases of smart contracts:
+%\begin{itemize}
+%	\item Decentralized Tokens \bigskip
+%	\item Exchanges, Auctions \bigskip
+%	\item Notary, Registry \bigskip
+%	\item Insurance, Lending \bigskip
+%\end{itemize}
+%\end{frame}
+
+\section{Solidity BMC}
+
+\begin{frame}{Solidity}
+\begin{itemize}
+	\item Developed for smart contracts \bigskip
+	\item Most used language to write smart contracts \bigskip
+	\item Syntax similar to C/Java \bigskip
+	\item Main code elements are \emph{contracts} \bigskip
+	\item Storage and local variables \bigskip
+	\item Integers of various sizes, \emph{address}, \emph{mapping}, structs, arrays...
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Solidity}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract Token {
+    /// The main balances / accounting mapping.
+    mapping(address => uint256) balances;
+
+    /// Create the token contract crediting `msg.sender` with
+    /// 10000 tokens.
+    constructor() public {
+        balances[msg.sender] = 10000;
+    }
+
+    /// Transfer `_value` tokens from `msg.sender` to `_to`.
+    function transfer(address _to, uint256 _value) public {
+        require(balances[msg.sender] >= _value);
+        uint256 sumBefore = balances[msg.sender] + balances[_to];
+        balances[msg.sender] -= _value;
+        balances[_to] += _value;
+        uint256 sumAfter = balances[msg.sender] + balances[_to];
+        assert(sumBefore == sumAfter);
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Solidity BMC}
+\begin{itemize}
+	\item Basic idea: SMT-based BMC \bigskip
+	\item Gas incentive against unbounded loops \bigskip
+	\item Practicality over Completeness \bigskip
+	\item Precise encoding
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solidity BMC}
+Verification targets:\\
+\begin{itemize}
+	\item Underflow / Overflow / Division by 0 \bigskip
+	\item Trivial conditions / Unreachable code \bigskip
+	\item Assertions
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+\begin{itemize}
+	\item Traverse the AST
+	\begin{itemize}
+		\item Collect constraints
+		\item Query the SMT solver \bigskip
+	\end{itemize}
+	\item Five types of constraints:\\Control-flow, Type constraint, Variable assignment, Branch conditions, Verification Target
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+Branch conditions:\\~\\
+Auxiliary stack that keeps track of the conjunction of conditions that are
+true at the current program path.\\
+No constraint is added to the solver.
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+Control-flow:\\~\\
+Global constraints of the form $b \rightarrow r$, where $b$
+is the conjunction of conditions in the current path and $r$ is
+the condition in \code{require(r)} and \code{assert(r)}.
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+Type constraint:\\~\\
+Declaration of local variables use default values from types
+(Integer: 0, Bool: false), and function parameters are initialized
+with a range of valid values (\code{uint32 x}: $0 \le x < 2^{32}$).
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+Variable assignment:\\~\\
+The encoding follows the SSA form.
+When a variable is assigned inside different branches,
+a new \code{if-then-else} variable is created after the
+branching to re-combine the different values.
+\end{frame}
+
+\begin{frame}{Solidity $\rightarrow$ SMT Encoding}
+Verification target:\\
+\begin{itemize}
+	\item Underflow / Overflow / Division by 0 \bigskip
+	\item Trivial conditions / Unreachable code \bigskip
+	\item Assertions \bigskip
+\end{itemize}
+Counterexamples are given when a property fails.
+\end{frame}
+
+\begin{frame}[fragile]{Solidity $\rightarrow$ SMT Encoding}
+\begin{figure}
+\noindent\begin{minipage}{.48\textwidth}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+  function f(uint256 a, uint256 b)
+  {
+    if (a == 0)
+      require(b <= 100);
+    else if (a == 1)
+      b = 1000;
+    else
+      b = 10000;
+    assert(b <= 100000);
+  }
+}
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+1. $a_0 \ge 0 \land a_0 < 2^{256}  \land \phantom{x}$\\
+2. $b_0 \ge 0 \land b_0 < 2^{256}  \land \phantom{x}$\\
+3. $(a_0 = 0) \rightarrow (b_0 \le 100) \, \land$\\
+4. $b_1 = 1000 \land b_2 = 10000$\\
+5. $b_3 = ite(a == 1, b_1, b_2) \land \phantom{x}$\\
+6. $b_4 = ite(a == 0, b_0, b_3) \land \phantom{x}$\\
+7. $\neg b_4 \le 100000$
+\end{minipage}
+\end{figure}
+
+\end{frame}
+
+\section{Future Plans}
+
+\begin{frame}[fragile]{Future Plans - Loops}
+\begin{itemize}
+	\item Automatic detection of loop bounds \bigskip
+	\item Invariant annotations \bigskip
+	\item Current syntax:
+\end{itemize}
+\begin{lstlisting}[
+    basicstyle=\footnotesize, %or \small or \footnotesize etc.
+]
+contract C
+{
+    uint x;
+    function f(uint[] _arr) {
+        require(_arr.length < 12);
+        for (uint i = 0; i < _arr.length; ++i)
+            x += _arr[i];
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Future Plans - Multi-transaction Invariants}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+  uint a;
+
+  constructor () public {}
+
+  function a1() public { a = 1; }
+  function a2() public { a = 2; }
+  function a3() public { a = 3; }
+  function a4() public { a = 4; }
+
+  function plusA(uint x) public view returns (uint) {
+    require(x < 1000);
+    return a + x;
+  }
+}
+\end{lstlisting}
+No transaction leads to $a > 4$
+\end{frame}
+
+\begin{frame}[fragile]{Future Plans - Post-constructor Invariants}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+  uint a;
+
+  constructor (uint x) public {
+	  require(x < 10);
+	  a = x;
+  }
+
+  function plusA(uint x) public view returns (uint) {
+    require(x < 1000);
+    return a + x;
+  }
+}
+\end{lstlisting}
+State variable $a$ can only be assigned values smaller than 10,
+and is never assigned again.
+\end{frame}
+
+\begin{frame}[fragile]{Future Plans - Modifiers as pre and postconditions}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+    uint totalSupply;
+
+    modifier safeBalance {
+        require(totalSupply == 10000);
+        _;
+        assert(totalSupply == 10000);
+    }
+
+    function transfer(address _to, uint256 _value) safeBalance {
+        ...
+    }
+}
+\end{lstlisting}
+Modifier \code{safeBalance} guarantees that the \code{totalSupply}
+does not change after a \code{transfer}.
+\end{frame}
+
+\begin{frame}[fragile]{Future Plans - Function abstraction}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+    uint totalSupply;
+
+    modifier safeBalance {
+        require(totalSupply == 10000);
+        _;
+        assert(totalSupply == 10000);
+    }
+
+    function transfer(address _to, uint256 _value) safeBalance {
+        ...
+    }
+
+    function zeroAccount(address _to) {
+        transfer(_to, balance[msg.sender]);
+        assert(totalSupply == 10000);
+    }
+}
+\end{lstlisting}
+The modifier can then be used to abstract function calls and prove
+properties more efficiently.
+\end{frame}
+
+\begin{frame}{Future Plans - Range restriction of real life values}
+\begin{itemize}
+	\item \code{block.timestamp} will not exceed 64 bits for the next 500 billion years \bigskip
+	\item \code{block.number}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Future Plans - Effective Callback Freeness}
+\begin{itemize}
+	\item Recently introduced by~\cite{Grossman} \bigskip
+	\item State variable invariants still hold after external calls
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Let's build together}
+\url{github.com/ethereum/solidity}\\~\\
+\url{gitter.im/ethereum/solidity-dev}\\~\\
+\url{leo@ethereum.org}\\~\\
+\begin{center}
+Thank you!
+\end{center}
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+  \frametitle<presentation>{References}
+    
+  \begin{thebibliography}{20}
+    
+  %\beamertemplatearticlebibitems
+  \setbeamertemplate{bibliography item}{\insertbiblabel}
+
+  \bibitem{Grossman}
+Grossman, S., Abraham, I., Golan-Gueta, G., Michalevsky, Y., Rinetzky, N.,
+  Sagiv, M., Zohar, Y.: Online detection of effectively callback free objects
+  with applications to smart contracts. Proc. ACM Program. Lang.  2(POPL),
+  48:1--48:28 (2017)
+
+  \bibitem{Bhargavan2016}
+Bhargavan, K., Delignat-Lavaud, A., Fournet, C., Gollamudi, A., Gonthier, G.,
+  Kobeissi, N., Kulatova, N., Rastogi, A., Sibut-Pinote, T., Swamy, N.,
+  Zanella-B{\'e}guelin, S.: Formal verification of smart contracts: Short
+  paper. In: Proceedings of the 2016 ACM Workshop on Programming Languages and
+  Analysis for Security. pp. 91--96. PLAS '16 (2016)
+
+  \bibitem{Mythril}
+ConsenSys: Mythril (2018), \url{github.com/ConsenSys/mythril}
+
+  \bibitem{ZEUS}
+Kalra, S., Goel, S., Dhawan, M., Sharma, S.: {ZEUS}: Analyzing safety of smart
+  contracts  (2018)
+
+  \bibitem{Luu2016}
+Luu, L., Chu, D.H., Olickel, H., Saxena, P., Hobor, A.: Making smart contracts
+  smarter. In: Proceedings of the 2016 ACM SIGSAC Conference on Computer and
+  Communications Security. pp. 254--269. CCS '16 (2016)
+
+  \bibitem{NKSSH18}
+Nikolic, I., Kolluri, A., Sergey, I., Saxena, P., Hobor, A.: Finding the
+  greedy, prodigal, and suicidal contracts at scale. CoRR  abs/1802.06038
+  (2018), \url{http://arxiv.org/abs/1802.06038}
+
+  \bibitem{Why3}
+Why3: Why3 (2018), \url{why3.lri.fr}
+
+  \bibitem{Eth-Isabelle}
+Eth-Isabelle, \url{github.com/pirapira/eth-isabelle}
+
+  \bibitem{KEVM}
+KEVM, \url{github.com/kframework/evm-semantics}
+
+  \bibitem{Ethereum-Lem}
+Ethereum-Lem, \url{github.com/mrsmkl/ethereum-lem}
+
+  \end{thebibliography}
+\end{frame}
+
+\end{document}
+
+

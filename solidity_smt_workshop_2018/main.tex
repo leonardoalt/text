@@ -1,0 +1,35 @@
+\documentclass{llncs}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{listings}
+
+\input{macros}
+
+\begin{document}
+\pagestyle{plain}
+
+\title{SMT-based Compile-time Verification of Safety Properties for Smart Contracts}
+\subtitle{Work in progress}
+
+\author{Leonardo Alt \and Christian Reitwiessner}
+\institute{Ethereum Foundation \\
+\email{\{leo,chris\}@ethereum.org}
+}
+\maketitle
+
+\input{abstract}
+\input{introduction}
+\input{smart_contracts}
+\input{solidity}
+\input{smt_fv}
+\input{conclusions}
+
+\bibliography{main}
+\bibliographystyle{splncs03}
+
+\end{document}

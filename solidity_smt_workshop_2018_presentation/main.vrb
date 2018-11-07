@@ -1,0 +1,26 @@
+\frametitle{Future Plans - Function abstraction}
+\begin{lstlisting}[
+    basicstyle=\tiny, %or \small or \footnotesize etc.
+]
+contract C
+{
+    uint totalSupply;
+
+    modifier safeBalance {
+        require(totalSupply == 10000);
+        _;
+        assert(totalSupply == 10000);
+    }
+
+    function transfer(address _to, uint256 _value) safeBalance {
+        ...
+    }
+
+    function zeroAccount(address _to) {
+        transfer(_to, balance[msg.sender]);
+        assert(totalSupply == 10000);
+    }
+}
+\end{lstlisting}
+The modifier can then be used to abstract function calls and prove
+properties more efficiently.

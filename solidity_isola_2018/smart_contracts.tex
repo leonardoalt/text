@@ -1,0 +1,56 @@
+\section{Smart Contracts}
+\label{section:smart_contracts}
+
+Programs in Ethereum are called \emph{smart contracts}.
+They can be used to enforce agreements between
+mutually distrusting parties as long as all conditions can be fully formalized
+and do not depend on external factors. Typical use-cases are decentralized
+tokens which can have a currency-like aspect, any mechanisms that build
+on top of these tokens like exchanges and auctions or also decentralized
+tamper-proof registry systems like a domain name system.
+
+Each smart contract has an \emph{address} under which, among other things, its \emph{code},
+and a key-value store of data (\emph{storage}) are stored. The code is fixed after the creation phase
+and only the smart contract itself can modify the data stored at its address.
+
+Users can interact with a smart contract by sending a \emph{transaction}
+to its address. This causes the smart contract's code to execute inside
+the so-called \emph{Ethereum Virtual Machine} (EVM), which is a stack-based
+256-bit machine with a minimalistic instruction set. Each execution environment
+has a freshly initialized \emph{memory area} (not to be confused with the persisting
+storage). During its execution, a smart contract can also call other
+smart contracts synchronously, which causes their code to be run in
+a new execution environment. Data can be passed and received in calls.
+Furthermore, smart contracts can also create new smart contracts with
+arbitrary code.
+
+Since it would otherwise be easy to stall the network by asking it to
+execute a complex task, the resources consumed are metered during execution
+in a unit called \emph{gas}. Each transaction only provides a certain
+amount of gas, which acts as a \emph{gas limit}. If execution is terminated via the \emph{stop} instruction,
+any remaining gas is refunded and the transaction is successful.
+However, if an exceptional condition or this \emph{gas limit} is reached without
+prior termination, any effect of the transaction is reverted and it is marked as a failure.
+In every case, the user
+who requested the execution pays for it with Ethereum's native token,
+Ether, proportionally to the amount of gas consumed.
+
+A reverting termination can also happen prior to all gas being consumed. This is
+a special feature of the Ethereum Virtual Machine,
+which makes the control-flow analysis different from other languages.
+Whenever the EVM encounters an invalid situation (invalid opcode, invalid
+stack access, etc.), execution will not only stop, but all effects on the
+state will be reverted. This reversion takes effect in the current execution
+environment, and the environment will also
+flag a failure to the calling environment, if present. Typically,
+when a call fails, high level languages will in turn cause an
+invalid situation in the caller and thus the reversion
+affects the whole transaction.
+
+There is also an explicit opcode that causes the current call to fail, which is
+essentially the same as described above, but as an \emph{intended} effect.
+%
+Very briefly, the SMT encoding we will discuss later assumes that no intended
+failure happens and tries to deduct that no unintended failure can occur. This
+allows the programmer to state preconditions using intended failures and
+postconditions using unintended failures.

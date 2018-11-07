@@ -1,0 +1,23 @@
+\section{Conclusion}
+\label{section:conclusion}
+We have presented our current work and future plans building an SMT-based
+formal verification module inside the Solidity compiler.
+%
+The module creates SMT constraints from the Solidity code and queries SMT
+solvers to statically check for underflow/overflow, division by zero,
+unreachable/trivial code, and assertion fails, where require statements are
+used as assumptions.
+%
+The programmer receives, in compile-time, feedback with counterexamples in case
+any of the target properties fail, without any extra effort.
+%
+The SMT constraints and queries are created using theories that model the
+Solidity program precisely, therefore the given counterexamples are correct.
+
+The features that are currently under implementation aim at extending the
+subset of Solidity that is supported, as well as improving error reporting.
+%
+Future work on the SMT module includes interesting broader research questions,
+such as computing multi-transaction invariants for state variables, detecting
+post-constructor invariants, and using modifier-based abstraction for
+functions.

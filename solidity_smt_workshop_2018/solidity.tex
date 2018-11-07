@@ -1,0 +1,84 @@
+\section{Solidity}
+\label{section:solidity}
+
+Solidity is a programming language specifically developed to write smart contracts
+which run on the Ethereum Virtual Machine. It is a statically-typed curly-braces
+language with a syntax similar to Java. The main source code elements are
+called \emph{contracts} and are similar to classes in other languages.
+Contract-level variables in Solidity are persisted in storage while
+local variables and function parameters only have a temporary lifetime.
+Among others, Solidity has integer data types of various sizes (up to 256 bits,
+the word size of the EVM), address types and an associative array
+type called \emph{mapping} which can only be used for contract-level variables.
+
+The source code in Fig.~\ref{fig:tokenContract} shows a minimal example of a token contract.
+Users are identified by their addresses and initially, all tokens are
+owned by the creator of the contract, but
+anyone who owns tokens can transfer an arbitrary amount to other addresses.
+Authentication is implicit in the fact that the address from which
+a function is called can be accessed through the global variable
+\texttt{msg.sender}. In practice, this is enforced by checking a
+cryptographic signature on the transaction that is sent through the network.
+
+\begin{figure}
+\begin{verbatim}
+contract Token {
+    /// The main balances / accounting mapping.
+    mapping(address => uint256) balances;
+
+    /// Create the token contract crediting `msg.sender` with
+    /// 10000 tokens.
+    constructor() public {
+        balances[msg.sender] = 10000;
+    }
+
+    /// Transfer `_value` tokens from `msg.sender` to `_to`.
+    function transfer(address _to, uint256 _value) public {
+        require(balances[msg.sender] >= _value);
+        balances[msg.sender] -= _value;
+        balances[_to] += _value;
+    }
+}
+\end{verbatim}
+\caption{Example of a token contract}
+\label{fig:tokenContract}
+\end{figure}
+
+The \texttt{require} statement inside the function \texttt{transfer} is used
+to check a precondition at run-time: If its argument evaluates to false,
+the execution terminates and any previous change to the state is reverted.
+Here, it prevents tokens being transferred that are not actually available.
+
+In general, invalid input should be caught via a failing \texttt{require}.
+The related \texttt{assert} statement can be used to check postconditions.
+The idea behind is that it should never be possible to reach a failing
+assert.
+\texttt{assert} essentially\footnote{There are two main differences however: As opposed to \texttt{require},
+\texttt{assert} will result in all remainder \emph{gas} to be consumed and \texttt{require} allows a custom message to be returned.}
+has the same effect as \texttt{require}, but
+is encoded differently in the bytecode. Verification tools on bytecode
+level (as opposed to the high-level approach described in this article)
+typically check whether it is possible to reach an assert in any way.
+
+We now show how an \texttt{assert} can be introduced into the \texttt{transfer} function
+to perform a simple invariant check.
+\begin{verbatim}
+function transfer(address _to, uint256 _value) public {
+    require(balances[msg.sender] >= _value);
+    uint256 sumBefore = balances[msg.sender] + balances[_to];
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    uint256 sumAfter = balances[msg.sender] + balances[_to];
+    assert(sumBefore == sumAfter);
+}
+\end{verbatim}
+
+The \texttt{assert} checks that the sum of the balances in the two
+accounts involved did not change due to the transfer. Currently,
+the \texttt{assert} statement is not removed by the compiler, even
+if the formal analysis module can prove that it never fails.
+
+Note that in the general case, \verb+balances[_to]+ can overflow
+and thus an analysis tool might flag this assert as potentially
+failing. In this specific example, though, the amount of available tokens
+is too small for this to happen.

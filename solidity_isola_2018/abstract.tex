@@ -1,0 +1,22 @@
+\begin{abstract}
+Ethereum smart contracts are programs that run inside a public distributed
+database called a blockchain.  These smart contracts are used to handle tokens
+of value, can be accessed and analyzed by everyone and are immutable once
+deployed.
+%
+Those characteristics make it imperative that smart contracts are bug-free at
+deployment time, hence the need to verify them formally.
+%
+In this paper we describe our current efforts in building an SMT-based formal
+verification module within the compiler of Solidity, a popular language for
+writing smart contracts.
+%
+The tool is seamlessly integrated into the compiler, where during compilation,
+the user is automatically warned of and given counterexamples for potential
+arithmetic overflow/underflow, unreachable code, trivial conditions, and
+assertion fails.
+%
+We present how the component currently translates a subset of Solidity into SMT
+statements using different theories, and discuss future challenges such as
+multi-transaction and state invariants.
+\end{abstract}

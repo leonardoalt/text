@@ -1,0 +1,58 @@
+\section{Introduction}
+The Ethereum~\cite{WhitePaper} platform is a system that appears as a
+singleton networked computer usable by anyone, but is actually built as a
+distributed database that utilizes blockchain technology to achieve consensus.
+%
+One of the features that sets Ethereum apart from other blockchain systems is
+the ability to store and execute code inside this database, via the Ethereum
+Virtual Machine (\emph{EVM}).
+%
+In contrast to traditional server systems, anyone can inspect this stored code
+and execute functions that can have stateful effects.
+%
+Since blockchains are typically used to store ownership relations of valuable goods
+(for example
+cryptocurrencies),
+malicious actors have a monetary incentive to analyze the inner
+workings of such code. Because of that, testing (i.e.\  dynamic analysis of some
+typical inputs) does not suffice and analyzing all possible inputs by utilizing
+static analysis or formal verification is recommended.
+
+SAT/SMT-based techniques have been used extensively for program 
+verification~\cite{Biere99,Donaldson11,Komuravelli13,Beyer11,Kroening14,Alt17}.
+%
+This paper shows how the Solidity compiler, which generates EVM bytecode,
+utilizes an SMT solver and a Bounded Model Checking~\cite{Biere99} approach to
+verify safety properties that can be specified as part of the source code, as
+well as fixed targets such as arithmetic underflow/overflow, division by zero and detection of
+unreachable code and trivial conditions.
+%
+For the user, the main advantage of this system over others is that they do not
+need to learn a second verification language or how to use any new tools, since
+verification is part of the compilation process.
+%
+The Solidity language has requirement and assertion constructs that allow to
+filter and check conditions at run-time.  The verification component
+builds on top of this and tries to
+verify at compile-time that the asserted conditions hold for any input,
+assuming the given requirements.
+
+This paper is organized as follows:  Sec.~\ref{section:smart_contracts}
+introduces the EVM and smart contracts.  Sec.~\ref{section:solidity} gives a
+very brief overview of Solidity. Sec.~\ref{section:smt} discusses the
+translation from Solidity to SMT statements and next challenges. Finally,
+Sec.~\ref{section:conclusion} contains our concluding remarks.
+
+\begin{paragraph}{Related work.}
+Oyente~\cite{Luu2016}, Mythril~\cite{Mythril} and MAIAN~\cite{NKSSH18} are SMT-based symbolic
+execution tools for EVM bytecode that check for specific known vulnerabilities,
+where Oyente also checks for assertion fails. They simulate the virtual
+machine and execute all possible paths, which takes a performance toll even
+though the approach works well for simple programs.
+
+Subsets of Solidity have been translated to Why3~\cite{Why3},
+F*~\cite{Bhargavan2016} and LLVM~\cite{ZEUS}, but the first requires learning a new annotation
+specification language and the latter two only verify fixed vulnerability
+patterns and do not verify custom user-provided assertions.
+
+\end{paragraph}
