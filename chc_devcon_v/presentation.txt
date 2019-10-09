@@ -1,0 +1,137 @@
+
+
+
+Show simple state machine example.
+Quickly explain the code, and that function `invariant` represents
+a contract invariant.
+Contract invariant is a property that holds before and after every public function, FOR ANY NUMBER OF TX.
+assert(x <= 1).
+Is it safe? Yes.
+Get an invariant out of it.
+Compiler tells us: this is true about your state vars.
+(x <= 1).
+
+Show second state machine example.
+assert(x <= 7).
+Is it safe? Yes.
+Before running, ask
+"what do you think the compiler will give as an invariant?"
+Get an invariant out of it.
+Compiler tells us: this is true about your state vars.
+(x <= 1).
+
+Same invariant as before, even though the assertion is different.
+Why is that? Both (x <= 1) and (x <= 7) are proven invariants.
+What is the difference between those two invariants?
+
+If I know only the invariant and the body of function f, without knowing anything else,
+does the invariant still hold after the function?
+Same for g and h.
+
+x <= 2;
+if (x == 0)
+	x = 1;
+x <= 2;
+
+x <= 2;
+if (x == 1)
+	x = 0;
+x <= 2;
+
+x <= 2;
+if (x == 7)
+	x = 100;
+x <= 2
+
+Inductive invariant
+
+x <= 7;
+if (x == 0)
+	x = 1;
+x <= 7;
+
+x <= 7;
+if (x == 1)
+	x = 0;
+x <= 7;
+
+x <= 7;
+if (x == 7)
+	x = 100;
+x ? 7; not guaranteed!
+
+Not an inductive invariant
+
+(x <= 1) is an inductive invariant, whereas (x <= 7) is not!
+
+An inductive invariant is a self-contained invariant.
+It can summarize the relevant piece of code without relying on prior information.
+
+Inductive invariants are particularly useful to summarize the behavior of loops.
+
+Show example_3.
+(y <= x) is the core property of the loop.
+If we use the above with the negation of the loop condition,
+which has to be true after the loop, we get
+(y <= x) and (y >= x) -> (y == x)
+
+This can also be applied to recursive programs, where this inductive invariant
+is the inductive hypothesis to be proven.
+
+If inductive invariants are classically used for loops, how do we use them to 
+check smart contract properties?
+The lifecycle of a contract can also be seen as a control-flow containing a loop:
+
+Constructor -> idle state (Interface)
+Interface- > f1 -> Interface
+Interface- > f2 -> Interface
+Interface- > fn -> Interface
+Maybe here show concrete CFG for the state machine example.
+
+where the scope contains the state variables,
+and loop inductive invariants are contract invariants
+over the state variables!
+
+-------------------------------------------------
+
+Not sure yet about the order of the stuff below.
+Just throwing "we use Horn solvers to solve stuff" feels forced an unnatural.
+It'd be good to have a natural way to develop that.
+Attempt:
+
+Show previous CFG of the state machine contract annotated with predicates and constraints.
+A common and convenient way to formally model programs for model checking is by using CHCs
+(Constrained Horn Clauses).
+After the program is modelled, we can make reachability queries to check safety properties.
+
+So here we reduce model checking to solving CHCs.
+
+This is possible because in [8] the Existential positive Least Fixed-Point logic (E+LFP) is proven to
+logically match Hoare logic [18], showing that partial correctness of programs
+corresponds to E+LFP satisfiability. The connection between E+LFP and CHCs
+is investigated in [7], motivated by the convenience of representing program
+transition systems with loops using Horn clauses.
+Meaning: we can use CHC sat to check program correctness, which people have been doing [7][9]
+
+[7] Bjørner, N., Gurfinkel, A., McMillan, K.L., Rybalchenko, A.: Horn clause solvers
+for program verification. In: Fields of Logic and Computation II - Essays Dedicated
+to Yuri Gurevich on the Occasion of His 75th Birthday. pp. 24–51 (2015), https:
+//doi.org/10.1007/978-3-319-23534-9_2
+[8] Blass, A., Gurevich, Y.: Existential fixed-point logic. In: Computation Theory and
+Logic, In Memory of Dieter Rödding. pp. 20–36 (1987)
+[9] De Angelis et al. Verifying Array Programs by Transforming Verification Conditions. VMCAI'14
+
+If query is UNSAT, error is unreachable, and the solver gives us back the invariants generated.
+If query is SAT, a counterexample trace is given.
+
+Show counterexample!!!
+
+There are different ways to solve CHCs.
+Predicate abstraction, abstract interpretation, maximal inductive subsets, machine learning...
+
+Chosen one is SMT-based unbounded model checking (PDR/IC3) due to performance and usability (default inside Z3).
+Spacer.
+Backwards reachability using quantifier-free SMT queries and interpolation to find predecessors and new lemmas.
+
+---------------------------------------------
+Maybe related work here
