@@ -179,8 +179,73 @@ contract StateMachine {
 \end{figure}
 \end{frame}
 
+\begin{frame}[fragile]
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[basicstyle=\tiny,escapechar=!]
+pragma experimental SMTChecker;
+
+contract StateMachine {
+    uint x;
+
+    function f() public {
+        if (x == 0)
+            x = 1;
+    }
+
+    function g() public {
+        if (x == 1)
+            x = 0;
+    }
+
+    function invariant() public {
+        !\color{mLightPurple}{assert(x <= 1);}!
+    }
+}
+\end{lstlisting}
+\end{tabular}
+\end{center}
+SMTChecker returns {\color{mLightPurple}{safe}} and the contract invariant $x \le 1$.\\
+The invariant is the same as the assertion we wanted to prove.
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[basicstyle=\tiny,escapechar=!]
+pragma experimental SMTChecker;
+
+contract StateMachine {
+    uint x;
+
+    function f() public {
+        if (x == 0)
+            x = 1;
+    }
+
+    function g() public {
+        if (x == 1)
+            x = 0;
+    }
+
+    function h() public {
+        if (x == 7)
+            x = 100;
+    }
+
+    function invariant() public {
+        !\color{mLightPurple}{assert(x <= 7);}!
+    }
+}
+\end{lstlisting}
+\end{tabular}
+\end{center}
+SMTChecker again returns {\color{mLightPurple}{safe}} and the contract invariant $x \le 1$.
+\end{frame}
+
 \begin{frame}
-Demo
+Why does it still return contract invariant $x \le 1$, even though we tried to prove $x \le 7$?\\
+What is the difference between invariants $x \le 1$ and $x \le 7$?
 \end{frame}
 
 \begin{frame}[fragile]{}
@@ -188,34 +253,34 @@ Demo
 \begin{figure}
 
 \noindent\begin{minipage}{.49\textwidth}
-Invariant: $x \le 2$
+Invariant: $x \le 1$
 \begin{onlyenv}<2->
 \begin{lstlisting}[basicstyle=\scriptsize,escapechar=!]
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 f():
 if (x == 0)
     x = 1;
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 \end{lstlisting}
 \end{onlyenv}
 
 \begin{onlyenv}<4->
 \begin{lstlisting}[basicstyle=\scriptsize,escapechar=!]
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 g():
 if (x == 1)
     x = 0;
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 \end{lstlisting}
 \end{onlyenv}
 
 \begin{onlyenv}<6->
 \begin{lstlisting}[basicstyle=\scriptsize,escapechar=!]
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 h():
 if (x == 7)
     x = 100;
-!\color{mLightPurple}{x <= 2;}!
+!\color{mLightPurple}{x <= 1;}!
 \end{lstlisting}
 \end{onlyenv}
 
@@ -259,8 +324,8 @@ if (x == 7)
 
 \begin{frame}
 \begin{center}
-$x \le 2$ is Inductive!\\
-$x \le 2 \land \text{local behavior} \implies x \le 2$
+$x \le 1$ is Inductive!\\
+$x \le 1 \land \text{local behavior} \implies x \le 1$
 \end{center}
 \end{frame}
 
@@ -270,10 +335,6 @@ $x \le 2 \land \text{local behavior} \implies x \le 2$
 
 \begin{frame}{Inductive invariants}
 	are particularly useful to summarize the behavior of loops
-\end{frame}
-
-\begin{frame}
-Demo
 \end{frame}
 
 \begin{frame}[fragile]{Loop invariants}
@@ -287,6 +348,7 @@ assert(x == y);
 \end{lstlisting}
 \end{tabular}
 \end{center}
+SMTChecker returns {\color{mLightPurple}{safe}} and the loop invariant $y \le x$.
 
 \begin{itemize}
 	\item $y \le x$ is the core property of the the loop
@@ -402,10 +464,6 @@ assert(x == y);
 }%
 \end{minipage}
 \end{figure}
-\end{frame}
-
-\begin{frame}
-Demo
 \end{frame}
 
 \begin{frame}[fragile]
