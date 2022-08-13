@@ -1,3 +1,0 @@
-\beamer@sectionintoc {1}{Ethereum}{3}{0}{1}
-\beamer@sectionintoc {2}{Solidity BMC}{10}{0}{2}
-\beamer@sectionintoc {3}{Future Plans}{22}{0}{3}
